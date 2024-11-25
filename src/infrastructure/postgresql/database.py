@@ -1,28 +1,27 @@
-from src.core.config import settings
-from sqlalchemy.ext.asyncio import AsyncEngine
+from contextlib import asynccontextmanager
+from typing import Any, AsyncGenerator
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.exc import SQLAlchemyError
 
 
-class _DatabaseManager:
-    _user: str
-    _password: str
-    _host: str
-    _port: str
-    _db: str
-    _engine: AsyncEngine | None = None
+class Database:
+    def __init__(self, url: str) -> None:
+        self._async_engine = create_async_engine(
+            url=url, echo=True, isolation_level="READ COMMITED"
+        )
+        """expire_on_commit: don't expire objects after  transaction commit"""
+        self._async_session = async_sessionmaker(
+            bind=self._async_engine, expire_on_commit=False
+        )
 
-    def __init__(self):
-        user = settings.Database.POSTGRES_USER
-        password = settings.Database.POSTGRES_PASSWORD
-        host = settings.Database.POSTGRES_HOST
-        port = settings.Database.POSTGRES_PORT
-        db = settings.Database.POSTGRES_DB
-
-        self._user = user
-        self._password = password
-        self._host = host
-        self._port = port
-        self._db = db
-
-
-class DatabaseManagerAsync(_DatabaseManager):
-    pass
+    @asynccontextmanager
+    async def get_session(self) -> AsyncGenerator[AsyncSession, Any]:
+        session: AsyncSession = self._async_session
+        try:
+            yield session
+        except SQLAlchemyError:
+            await session.rollback()
+            raise
+        finally:
+            await session.commit()
+            await session.close()
