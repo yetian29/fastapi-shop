@@ -1,5 +1,5 @@
-from sqlalchemy.engine import Engine
 from src.core.config import settings
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 
 class _DatabaseManager:
@@ -8,7 +8,7 @@ class _DatabaseManager:
     _host: str
     _port: str
     _db: str
-    _engine: Engine | None = None
+    _engine: AsyncEngine | None = None
 
     def __init__(self):
         user = settings.Database.POSTGRES_USER
