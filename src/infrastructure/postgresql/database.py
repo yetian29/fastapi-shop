@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.exc import SQLAlchemyError
 
 
-class Database:
+class DatabaseManager:
     def __init__(self, url: str) -> None:
         self._async_engine = create_async_engine(
             url=url, echo=True, isolation_level="READ COMMITED"
